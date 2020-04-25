@@ -1,0 +1,14 @@
+Package: com.rpetrich.mailfix
+Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 7.0), firmware (< 13.4.5)
+Name: MailFix
+Version: 0.1
+Architecture: iphoneos-arm
+Description: Fix for bugs in MobileMail's MIME.framework
+Depiction: https://www.rpetrich.com/cydia/mailfix/
+Homepage: https://www.rpetrich.com/cydia/mailfix/
+Maintainer: BigBoss <bigboss@thebigboss.org>
+Author: Ryan Petrich <rpetrich+mailfix@gmail.com>
+Sponsor: thebigboss.org <http://thebigboss.org>
+Section: Tweaks
+dev: rpetrich
+Tag: purpose::extension, role::developer
