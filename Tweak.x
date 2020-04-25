@@ -1,11 +1,22 @@
+#define __COREFOUNDATION_CFUSERNOTIFICATION__ 1
+#import <CoreFoundation/CoreFoundation.h>
+#undef __COREFOUNDATION_CFUSERNOTIFICATION__
+
 #import <Foundation/Foundation.h>
 
 #import <sys/mman.h>
 #import <sys/stat.h>
+#import <notify.h>
 
 #import "CaptainHook/CaptainHook.h"
+#import "CFUserNotification.h"
 
 extern NSString *MFDataGetDataPath(void);
+
+static void ringAlarms(void)
+{
+	notify_post("com.rpetrich.mailfix.potential-exploitation");
+}
 
 @interface MFData : NSData
 @end
@@ -49,6 +60,7 @@ extern NSString *MFDataGetDataPath(void);
 	if (*_path != NULL) {
 		const char *path = [[[NSFileManager defaultManager] mf_makeUniqueFileInDirectory:MFDataGetDataPath()] fileSystemRepresentation];
 		if (path == nil) {
+			ringAlarms();
 			[NSException raise:NSInternalInconsistencyException format:@"Failed to create or copy temporary cache file path."];
 		}
 		*_path = strdup(path);
@@ -66,11 +78,13 @@ extern NSString *MFDataGetDataPath(void);
 			int result = lseek(*_fd, *_flushFrom, SEEK_SET);
 			if (result == -1) {
 				// panic if failed to seek
+				ringAlarms();
 				[NSException raise:NSInternalInconsistencyException format:@"Failed to seek."];
 			}
 			result = write(*_fd, &[self bytes][*_flushFrom], capacity);
 			if (result == -1) {
 				// panic if failed to write
+				ringAlarms();
 				[NSException raise:NSInternalInconsistencyException format:@"Failed to write."];
 			}
 		}
@@ -78,6 +92,7 @@ extern NSString *MFDataGetDataPath(void);
 			int result = ftruncate(*_fd, capacity);
 			if (result == -1) {
 				// panic if failed to truncate
+				ringAlarms();
 				[NSException raise:NSInternalInconsistencyException format:@"Failed to truncate."];
 			}
 		}
@@ -105,11 +120,13 @@ extern NSString *MFDataGetDataPath(void);
 	if (fd == -1) {
 		if (*_path == NULL) {
 			// panic if path is null
+			ringAlarms();
 			[NSException raise:NSInternalInconsistencyException format:@"Expected a path."];
 		}
 		fd = open(*_path, O_RDONLY);
 		if (fd == -1) {
 			// panic if cannot open
+			ringAlarms();
 			[NSException raise:NSInternalInconsistencyException format:@"Expected open to succeed."];
 		}
 	}
@@ -117,12 +134,14 @@ extern NSString *MFDataGetDataPath(void);
 	int result = fstat(fd, &buf);
 	if (result == -1) {
 		close(fd);
+		ringAlarms();
 		[NSException raise:NSInternalInconsistencyException format:@"Expected fstat to succeed."];
 	}
 	if (buf.st_size > 0) {
 		void *mapped = mmap(NULL, buf.st_size, *_immutable ? PROT_READ : (PROT_READ|PROT_WRITE), MAP_PRIVATE, *_fd, 0);
 		if (mapped == MAP_FAILED) {
 			// panic if mmap fails
+			ringAlarms();
 			[NSException raise:NSInternalInconsistencyException format:@"Expected mmap to succeed."];
 		}
 		*_vm = YES;
@@ -142,3 +161,40 @@ extern NSString *MFDataGetDataPath(void);
 }
 
 %end
+
+static CFUserNotificationRef pendingNotification;
+static void displayAlert(void)
+{
+	CFUserNotificationRef notification = pendingNotification;
+	if (notification != NULL) {
+		pendingNotification = NULL;
+		CFUserNotificationCancel(notification);
+		CFRelease(notification);
+	}
+	const CFTypeRef keys[] = {
+		kCFUserNotificationAlertTopMostKey,
+		kCFUserNotificationAlertHeaderKey,
+		kCFUserNotificationAlertMessageKey
+	};
+	const CFTypeRef values[] = {
+		kCFBooleanTrue,
+		CFSTR("MailFix"),
+		CFSTR("Detected an attempt to exploit vulnerabilities in MIME.framework's MFMutableData class"),
+	};
+	CFDictionaryRef dict = CFDictionaryCreate(kCFAllocatorDefault, (const void **)keys, (const void **)values, sizeof(keys) / sizeof(*keys), &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+	SInt32 err = 0;
+	pendingNotification = CFUserNotificationCreate(kCFAllocatorDefault, 0, kCFUserNotificationPlainAlertLevel, &err, dict);
+	CFRelease(dict);
+}
+
+static void receivedNotification(CFNotificationCenterRef center, void *observer, CFNotificationName name, const void *object, CFDictionaryRef userInfo)
+{
+	displayAlert();
+}
+
+%ctor {
+	if ([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.springboard"]) {
+		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, receivedNotification, CFSTR("com.rpetrich.mailfix.potential-exploitation"), NULL, CFNotificationSuspensionBehaviorHold);
+	}
+	%init();
+}

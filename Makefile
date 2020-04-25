@@ -1,6 +1,7 @@
 TWEAK_NAME = MailFix
 MailFix_FILES = Tweak.x
 MailFix_PRIVATE_FRAMEWORKS = MIME
+MailFix_USE_MODULES = 0
 
 INSTALL_TARGET_PROCESSES = MobileMail maild
 

@@ -8,6 +8,7 @@
 		<array>
 			<string>com.apple.email.maild</string>
 			<string>com.apple.MIME</string>
+			<string>com.apple.springboard</string>
 		</array>
 	</dict>
 </dict>
