@@ -6,6 +6,7 @@
 	<dict>
 		<key>Bundles</key>
 		<array>
+			<string>com.apple.email.maild</string>
 			<string>com.apple.MIME</string>
 		</array>
 	</dict>
