@@ -55,8 +55,9 @@ static void ringAlarms(void)
 	char **_path = CHIvarRef(self, _path, char *);
 	int *_fd = CHIvarRef(self, _fd, int);
 	NSUInteger *_flushFrom = CHIvarRef(self, _flushFrom, NSUInteger);
-	// BOOL *_flush = CHIvarRef(self, _flush, BOOL);
+	BOOL *_flush = CHIvarRef(self, _flush, BOOL);
 	BOOL *_vm = CHIvarRef(self, _vm, BOOL);
+	BOOL flush;
 	if (*_path != NULL) {
 		const char *path = [[[NSFileManager defaultManager] mf_makeUniqueFileInDirectory:MFDataGetDataPath()] fileSystemRepresentation];
 		if (path == nil) {
@@ -64,11 +65,17 @@ static void ringAlarms(void)
 			[NSException raise:NSInternalInconsistencyException format:@"Failed to create or copy temporary cache file path."];
 		}
 		*_path = strdup(path);
+		flush = YES;
+	} else {
+		flush = *_flush;
+		if (!flush) {
+			ringAlarms();
+			[NSException raise:NSInternalInconsistencyException format:@"Requested flushing, but without the flush flag set."];
+		}
 	}
-	// always flush
-	// if (!*_flush) {
-	// 	return
-	// }
+	if (!flush) {
+		return;
+	}
 	if ((*_fd == -1) && ((*_fd = open(*_path, O_CREAT | O_RDWR)) == -1)) {
 		*_capacity = capacity;
 		free(*_path);

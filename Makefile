@@ -3,7 +3,7 @@ MailFix_FILES = Tweak.x
 MailFix_PRIVATE_FRAMEWORKS = MIME
 MailFix_USE_MODULES = 0
 
-INSTALL_TARGET_PROCESSES = MobileMail maild
+INSTALL_TARGET_PROCESSES = MobileMail maild # SpringBoard
 
 ADDITIONAL_CFLAGS = -std=c99
 
