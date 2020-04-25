@@ -1,5 +1,5 @@
 Package: com.rpetrich.mailfix
-Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 7.0), firmware (< 13.4.5)
+Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 7.0), firmware (<< 13.4.5)
 Name: MailFix
 Version: 0.1
 Architecture: iphoneos-arm
