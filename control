@@ -1,14 +1,14 @@
-Package: com.rpetrich.mailfix
+Package: com.rpetrich.mailmend
 Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 7.0), firmware (<< 13.4.5)
-Name: MailFix
+Name: MailMend
 Version: 0.1
 Architecture: iphoneos-arm
-Description: Fix for bugs in MobileMail's MIME.framework
-Depiction: https://www.rpetrich.com/cydia/mailfix/
-Homepage: https://www.rpetrich.com/cydia/mailfix/
+Description: Mending a few bugs in MobileMail's MIME.framework
+Depiction: https://www.rpetrich.com/cydia/mailmend/
+Homepage: https://www.rpetrich.com/cydia/mailmend/
 Maintainer: BigBoss <bigboss@thebigboss.org>
-Author: Ryan Petrich <rpetrich+mailfix@gmail.com>
+Author: Ryan Petrich <rpetrich+mailmend@gmail.com>
 Sponsor: thebigboss.org <http://thebigboss.org>
 Section: Tweaks
 dev: rpetrich
-Tag: purpose::extension, role::developer
+Tag: purpose::extension

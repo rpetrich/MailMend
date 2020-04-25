@@ -1,7 +1,7 @@
-TWEAK_NAME = MailFix
-MailFix_FILES = Tweak.x
-MailFix_PRIVATE_FRAMEWORKS = MIME
-MailFix_USE_MODULES = 0
+TWEAK_NAME = MailMend
+MailMend_FILES = Tweak.x
+MailMend_PRIVATE_FRAMEWORKS = MIME
+MailMend_USE_MODULES = 0
 
 INSTALL_TARGET_PROCESSES = MobileMail maild # SpringBoard
 
@@ -34,4 +34,4 @@ include framework/makefiles/common.mk
 include framework/makefiles/tweak.mk
 
 stage::
-	plutil -convert binary1 "$(THEOS_STAGING_DIR)/Library/MobileSubstrate/DynamicLibraries/MailFix.plist"
+	plutil -convert binary1 "$(THEOS_STAGING_DIR)/Library/MobileSubstrate/DynamicLibraries/MailMend.plist"

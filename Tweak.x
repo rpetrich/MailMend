@@ -15,7 +15,7 @@ extern NSString *MFDataGetDataPath(void);
 
 static void ringAlarms(void)
 {
-	notify_post("com.rpetrich.mailfix.potential-exploitation");
+	notify_post("com.rpetrich.mailmend.potential-exploitation");
 }
 
 @interface MFData : NSData
@@ -185,7 +185,7 @@ static void displayAlert(void)
 	};
 	const CFTypeRef values[] = {
 		kCFBooleanTrue,
-		CFSTR("MailFix"),
+		CFSTR("MailMend"),
 		CFSTR("Detected an attempt to exploit vulnerabilities in MIME.framework's MFMutableData class"),
 	};
 	CFDictionaryRef dict = CFDictionaryCreate(kCFAllocatorDefault, (const void **)keys, (const void **)values, sizeof(keys) / sizeof(*keys), &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -201,7 +201,7 @@ static void receivedNotification(CFNotificationCenterRef center, void *observer,
 
 %ctor {
 	if ([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.springboard"]) {
-		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, receivedNotification, CFSTR("com.rpetrich.mailfix.potential-exploitation"), NULL, CFNotificationSuspensionBehaviorHold);
+		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, receivedNotification, CFSTR("com.rpetrich.mailmend.potential-exploitation"), NULL, CFNotificationSuspensionBehaviorHold);
 	}
 	%init();
 }
