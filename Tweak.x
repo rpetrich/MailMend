@@ -55,7 +55,7 @@ static void ringAlarms(void)
 	char **_path = CHIvarRef(self, _path, char *);
 	int *_fd = CHIvarRef(self, _fd, int);
 	NSUInteger *_flushFrom = CHIvarRef(self, _flushFrom, NSUInteger);
-	BOOL *_flush = CHIvarRef(self, _flush, BOOL);
+	// BOOL *_flush = CHIvarRef(self, _flush, BOOL);
 	BOOL *_vm = CHIvarRef(self, _vm, BOOL);
 	BOOL flush;
 	if (*_path != NULL) {
@@ -67,11 +67,9 @@ static void ringAlarms(void)
 		*_path = strdup(path);
 		flush = YES;
 	} else {
-		flush = *_flush;
-		if (!flush) {
-			ringAlarms();
-			[NSException raise:NSInternalInconsistencyException format:@"Requested flushing, but without the flush flag set."];
-		}
+		// Always flush!
+		// flush = *_flush;
+		flush = YES;
 	}
 	if (!flush) {
 		return;
@@ -151,6 +149,7 @@ static void ringAlarms(void)
 			ringAlarms();
 			[NSException raise:NSInternalInconsistencyException format:@"Expected mmap to succeed."];
 		}
+		*_bytes = mapped;
 		*_vm = YES;
 		if (useOnDiskLength) {
 			*_length = buf.st_size;
