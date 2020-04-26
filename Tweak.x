@@ -42,6 +42,7 @@ static void ringAlarms(void)
 
 @interface NSFileManager (NSFileManagerAdditions)
 - (NSString *)mf_makeUniqueFileInDirectory:(NSString *)directory;
+- (BOOL)mf_protectFileAtPath:(NSString *)path withClass:(NSInteger)protectionClass error:(NSError **)error;
 @end
 
 %hook MFMutableData
@@ -176,6 +177,73 @@ static void ringAlarms(void)
 	if (fd != *_fd) {
 		close(fd);
 	}
+}
+
+- (BOOL)writeToFile:(NSString *)path options:(NSDataWritingOptions)writeOptionsMask error:(NSError **)errorPtr
+{
+	void **_bytes = CHIvarRef(self, _bytes, void *);
+	NSUInteger *_capacity = CHIvarRef(self, _capacity, NSUInteger);
+	int *_fd = CHIvarRef(self, _fd, int);
+	char **_path = CHIvarRef(self, _path, char *);
+	BOOL *_immutable = CHIvarRef(self, _immutable, BOOL);
+	NSFileManager *fileManager = [NSFileManager defaultManager];
+	if (*_immutable && (*_path != NULL)) {
+		if (![fileManager removeItemAtPath:path error:errorPtr]) {
+			return NO;
+		}
+		if (*_bytes) {
+			[self _mapMutableData:YES];
+		}
+		NSUInteger length = [self length];
+		*_capacity = length;
+		if (*_fd != -1) {
+			int result = ftruncate(*_fd, length);
+			if (result == -1) {
+				// panic if failed to truncate
+				ringAlarms();
+				[NSException raise:NSInternalInconsistencyException format:@"Failed to truncate."];
+			}
+			close(*_fd);
+			*_fd = -1;
+		} else {
+			int result = truncate(*_path, length);
+			if (result == -1) {
+				// panic if failed to truncate
+				ringAlarms();
+				[NSException raise:NSInternalInconsistencyException format:@"Failed to truncate."];
+			}
+		}
+		NSDataWritingOptions protection = writeOptionsMask & NSDataWritingFileProtectionMask;
+		if (protection) {
+			// apply protection before moving
+			NSInteger protectionClass;
+			switch (protection) {
+				case NSDataWritingFileProtectionNone:
+					protectionClass = 4;
+					break;
+				case NSDataWritingFileProtectionComplete:
+					protectionClass = 1;
+					break;
+				case NSDataWritingFileProtectionCompleteUnlessOpen:
+					protectionClass = 2;
+					break;
+				case NSDataWritingFileProtectionCompleteUntilFirstUserAuthentication:
+					protectionClass = 3;
+					break;
+				default:
+					protectionClass = 1;
+					break;
+			}
+			if (![fileManager mf_protectFileAtPath:path withClass:protectionClass error:errorPtr]) {
+				return NO;
+			}
+		}
+		if (![fileManager moveItemAtPath:[NSString stringWithUTF8String:*_path] toPath:path error:errorPtr]) {
+			return NO;
+		}
+		return YES;
+	}
+	return %orig();
 }
 
 %end
