@@ -55,7 +55,7 @@ static void ringAlarms(void)
 	char **_path = CHIvarRef(self, _path, char *);
 	int *_fd = CHIvarRef(self, _fd, int);
 	NSUInteger *_flushFrom = CHIvarRef(self, _flushFrom, NSUInteger);
-	// BOOL *_flush = CHIvarRef(self, _flush, BOOL);
+	BOOL *_flush = CHIvarRef(self, _flush, BOOL);
 	BOOL *_vm = CHIvarRef(self, _vm, BOOL);
 	BOOL flush;
 	if (*_path != NULL) {
@@ -67,11 +67,23 @@ static void ringAlarms(void)
 		*_path = strdup(path);
 		flush = YES;
 	} else {
-		// Always flush!
-		// flush = *_flush;
-		flush = YES;
+		flush = *_flush;
 	}
 	if (!flush) {
+		if ((capacity > *_capacity) && !*_vm) {
+			char *buffer = malloc(capacity);
+			if (!buffer) {
+				ringAlarms();
+				[NSException raise:NSInternalInconsistencyException format:@"Failed to allocate buffer."];
+			}
+			if (capacity < *_length) {
+				ringAlarms();
+				[NSException raise:NSInternalInconsistencyException format:@"Capacity less than length."];
+			}
+			memcpy(buffer, *_bytes, *_length);
+			free(*_bytes);
+			*_bytes = buffer;
+		}
 		return;
 	}
 	if ((*_fd == -1) && ((*_fd = open(*_path, O_CREAT | O_RDWR)) == -1)) {
