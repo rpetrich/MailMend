@@ -1,7 +1,7 @@
 Package: com.rpetrich.mailmend
 Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 7.0), firmware (<< 13.4.5)
 Name: MailMend
-Version: 0.2
+Version: 0.2.1
 Architecture: iphoneos-arm
 Description: Mends a few bugs in MobileMail's MIME.framework
 Depiction: https://www.rpetrich.com/cydia/mailmend/
