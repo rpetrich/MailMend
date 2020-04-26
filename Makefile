@@ -3,7 +3,7 @@ MailMend_FILES = Tweak.x
 MailMend_PRIVATE_FRAMEWORKS = MIME
 MailMend_USE_MODULES = 0
 
-INSTALL_TARGET_PROCESSES = MobileMail maild # SpringBoard
+INSTALL_TARGET_PROCESSES = MobileMail maild SpringBoard
 
 ADDITIONAL_CFLAGS = -std=c99
 
