@@ -3,7 +3,7 @@ Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 7.0), firmware (<< 13.4.5)
 Name: MailMend
 Version: 0.1
 Architecture: iphoneos-arm
-Description: Mending a few bugs in MobileMail's MIME.framework
+Description: Mends a few bugs in MobileMail's MIME.framework
 Depiction: https://www.rpetrich.com/cydia/mailmend/
 Homepage: https://www.rpetrich.com/cydia/mailmend/
 Maintainer: BigBoss <bigboss@thebigboss.org>
