@@ -7,15 +7,18 @@
 #import <sys/mman.h>
 #import <sys/stat.h>
 #import <notify.h>
+#import <os/log.h>
 
 #import "CaptainHook/CaptainHook.h"
 #import "CFUserNotification.h"
 
 extern NSString *MFDataGetDataPath(void);
 
-static void ringAlarms(void)
+static void ringAlarms(NSString *errorText)
 {
 	notify_post("com.rpetrich.mailmend.potential-exploitation");
+	os_log(OS_LOG_DEFAULT, "panicking with: %{public}@", errorText);
+	[NSException raise:NSInternalInconsistencyException format:@"%@", errorText];
 }
 
 @interface MFData : NSData
@@ -59,11 +62,10 @@ static void ringAlarms(void)
 	BOOL *_flush = CHIvarRef(self, _flush, BOOL);
 	BOOL *_vm = CHIvarRef(self, _vm, BOOL);
 	BOOL flush;
-	if (*_path != NULL) {
+	if (*_path == NULL) {
 		const char *path = [[[NSFileManager defaultManager] mf_makeUniqueFileInDirectory:MFDataGetDataPath()] fileSystemRepresentation];
 		if (path == nil) {
-			ringAlarms();
-			[NSException raise:NSInternalInconsistencyException format:@"Failed to create or copy temporary cache file path."];
+			ringAlarms(@"Failed to create or copy temporary cache file path.");
 		}
 		*_path = strdup(path);
 		flush = YES;
@@ -74,12 +76,10 @@ static void ringAlarms(void)
 		if ((capacity > *_capacity) && !*_vm) {
 			char *buffer = malloc(capacity);
 			if (!buffer) {
-				ringAlarms();
-				[NSException raise:NSInternalInconsistencyException format:@"Failed to allocate buffer."];
+				ringAlarms(@"Failed to allocate buffer.");
 			}
 			if (capacity < *_length) {
-				ringAlarms();
-				[NSException raise:NSInternalInconsistencyException format:@"Capacity less than length."];
+				ringAlarms(@"Capacity less than length.");
 			}
 			memcpy(buffer, *_bytes, *_length);
 			free(*_bytes);
@@ -96,22 +96,21 @@ static void ringAlarms(void)
 			int result = lseek(*_fd, *_flushFrom, SEEK_SET);
 			if (result == -1) {
 				// panic if failed to seek
-				ringAlarms();
-				[NSException raise:NSInternalInconsistencyException format:@"Failed to seek."];
+				ringAlarms(@"Failed to seek.");
 			}
-			result = write(*_fd, &[self bytes][*_flushFrom], capacity);
+			const void *addr = [self bytes] + *_flushFrom;
+			size_t size = flushSize - *_flushFrom;
+			result = write(*_fd, addr, size);
 			if (result == -1) {
 				// panic if failed to write
-				ringAlarms();
-				[NSException raise:NSInternalInconsistencyException format:@"Failed to write."];
+				ringAlarms(@"Failed to write.");
 			}
 		}
 		if ((flushSize != capacity) || (*_capacity != capacity)) {
 			int result = ftruncate(*_fd, capacity);
 			if (result == -1) {
 				// panic if failed to truncate
-				ringAlarms();
-				[NSException raise:NSInternalInconsistencyException format:@"Failed to truncate."];
+				ringAlarms(@"Failed to truncate.");
 			}
 		}
 		if (*_bytes != NULL) {
@@ -120,6 +119,7 @@ static void ringAlarms(void)
 			} else {
 				free(*_bytes);
 			}
+			*_bytes = NULL;
 		}
 	}
 }
@@ -138,38 +138,38 @@ static void ringAlarms(void)
 	if (fd == -1) {
 		if (*_path == NULL) {
 			// panic if path is null
-			ringAlarms();
-			[NSException raise:NSInternalInconsistencyException format:@"Expected a path."];
+			ringAlarms(@"Expected a path.");
 		}
 		fd = open(*_path, O_RDONLY);
 		if (fd == -1) {
 			// panic if cannot open
-			ringAlarms();
-			[NSException raise:NSInternalInconsistencyException format:@"Expected open to succeed."];
+			ringAlarms(@"Expected open to succeed.");
 		}
 	}
 	struct stat buf;
 	int result = fstat(fd, &buf);
 	if (result == -1) {
 		close(fd);
-		ringAlarms();
-		[NSException raise:NSInternalInconsistencyException format:@"Expected fstat to succeed."];
+		ringAlarms(@"Expected fstat to succeed.");
 	}
 	if (buf.st_size > 0) {
 		void *mapped = mmap(NULL, buf.st_size, *_immutable ? PROT_READ : (PROT_READ|PROT_WRITE), MAP_PRIVATE, *_fd, 0);
 		if (mapped == MAP_FAILED) {
 			// panic if mmap fails
-			ringAlarms();
-			[NSException raise:NSInternalInconsistencyException format:@"Expected mmap to succeed."];
+			ringAlarms(@"Expected mmap to succeed.");
 		}
 		*_bytes = mapped;
 		*_vm = YES;
 		if (useOnDiskLength) {
 			*_length = buf.st_size;
+		} else if (*_length > buf.st_size) {
+			// panic if sizes don't match
+			ringAlarms(@"Expected size to be at least as large as length to succeed.");
 		}
 		*_capacity = buf.st_size;
 		*_mappedLength = buf.st_size;
 	} else {
+		*_vm = NO;
 		*_bytes = calloc(8, 1);
 		*_length = 0;
 		*_capacity = 8;
@@ -200,8 +200,7 @@ static void ringAlarms(void)
 			int result = ftruncate(*_fd, length);
 			if (result == -1) {
 				// panic if failed to truncate
-				ringAlarms();
-				[NSException raise:NSInternalInconsistencyException format:@"Failed to truncate."];
+				ringAlarms(@"Failed to truncate.");
 			}
 			close(*_fd);
 			*_fd = -1;
@@ -209,8 +208,7 @@ static void ringAlarms(void)
 			int result = truncate(*_path, length);
 			if (result == -1) {
 				// panic if failed to truncate
-				ringAlarms();
-				[NSException raise:NSInternalInconsistencyException format:@"Failed to truncate."];
+				ringAlarms(@"Failed to truncate.");
 			}
 		}
 		NSDataWritingOptions protection = writeOptionsMask & NSDataWritingFileProtectionMask;
